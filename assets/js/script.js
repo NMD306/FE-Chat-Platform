@@ -10,6 +10,7 @@ import {
   remove,
   get,
   child,
+  onChildRemoved,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
 
 import {
@@ -49,6 +50,8 @@ const buttonLogin = document.querySelector("[button-login]");
 const buttonRegister = document.querySelector("[button-login]");
 const buttonLogout = document.querySelector("[button-logout]");
 const chat = document.querySelector("[chat]");
+const chatRef = ref(db, "chats");
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     buttonLogout.style.display = "inline-block";
@@ -158,7 +161,6 @@ if (formChat) {
 // Display default message
 const chatBody = document.querySelector("[chat]");
 if (chatBody) {
-  const chatRef = ref(db, "chats");
   onChildAdded(chatRef, (data) => {
     const key = data.key;
     const content = data.val().content;
@@ -170,9 +172,17 @@ if (chatBody) {
           const fullName = snapshot.val().fullName;
 
           const newChat = document.createElement("div");
+          newChat.setAttribute("chat-key", key);
           let htmlFullName = "";
+          let htmlButtonDelete = "";
+
           if (userId == currentUser.uid) {
             newChat.classList.add("inner-outgoing");
+            htmlButtonDelete = `
+            <button class="button-delete" >
+            <i class="fa-regular fa-trash-can"></i>
+            </button>
+            `;
           } else {
             newChat.classList.add("inner-incoming");
             htmlFullName = `
@@ -193,6 +203,14 @@ if (chatBody) {
 `;
           chatBody.appendChild(newChat);
           chatBody.scrollTop = chatBody.scrollHeight;
+
+          // Delete message
+          const buttonDelete = document.querySelector(".button-delete");
+          if (buttonDelete) {
+            buttonDelete.addEventListener("click", () => {
+              remove(ref(db, "/chats/" + key));
+            });
+          }
         } else {
           console.log("No data available");
         }
@@ -206,3 +224,12 @@ if (chatBody) {
   });
 }
 // End display default message
+
+// delete realtime message
+onChildRemoved(chatRef, (data) => {
+  const key = data.key;
+  const chatItem = chatBody.querySelector(`[chat-key="${key}"]`);
+  if (chatItem) {
+    chatItem.remove();
+  }
+});
