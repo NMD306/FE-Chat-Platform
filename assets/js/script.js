@@ -11,6 +11,7 @@ import {
   get,
   child,
   onChildRemoved,
+  onChildAdded,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
 
 import {
@@ -19,7 +20,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  onChildAdded,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
