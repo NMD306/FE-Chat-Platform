@@ -8,6 +8,8 @@ import {
   onValue,
   update,
   remove,
+  get,
+  child,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
 
 import {
@@ -16,6 +18,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  onChildAdded,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -35,10 +38,11 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize database
 const db = getDatabase();
+const dbRef = ref(getDatabase());
 
 // Initialize Authentication
 const auth = getAuth(app);
-console.log(auth);
+let currentUser = null;
 
 // Check login Status
 const buttonLogin = document.querySelector("[button-login]");
@@ -49,6 +53,7 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     buttonLogout.style.display = "inline-block";
     chat.style.display = "block";
+    currentUser = user;
   } else {
     buttonLogin.style.display = "inline-block";
     buttonRegister.style.display = "inline-block";
@@ -127,3 +132,77 @@ if (buttonLogout) {
   });
 }
 // End Log Out
+
+// Chat form
+const formChat = document.querySelector("[chat]");
+if (formChat) {
+  formChat.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const content = formChat.content.value;
+    const uid = auth.currentUser.uid;
+    if (content && uid) {
+      set(push(ref(db, "chats")), {
+        content: content,
+        uid: uid,
+      });
+
+      formChat.content.value = "";
+    }
+    console.log(auth.currentUser.uid);
+    console.log(content);
+  });
+}
+// End Chat form
+
+// Display default message
+const chatBody = document.querySelector("[chat]");
+if (chatBody) {
+  const chatRef = ref(db, "chats");
+  onChildAdded(chatRef, (data) => {
+    const key = data.key;
+    const content = data.val().content;
+    const userId = data.val().userId;
+
+    get(child(dbRef, `users/${userId}`))
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const fullName = snapshot.val().fullName;
+
+          const newChat = document.createElement("div");
+          let htmlFullName = "";
+          if (userId == currentUser.uid) {
+            newChat.classList.add("inner-outgoing");
+          } else {
+            newChat.classList.add("inner-incoming");
+            htmlFullName = `
+      <div class ="inner-name">
+        ${fullName}
+      </div>
+      `;
+          }
+
+          newChat.innerHTMl = `
+      <div class ="inner-name">
+        ${htmlFullName}
+      </div>
+      <div class="inner-content">
+        ${content}
+      </div>
+      
+`;
+          chatBody.appendChild(newChat);
+          chatBody.scrollTop = chatBody.scrollHeight;
+        } else {
+          console.log("No data available");
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    console.log(data.key);
+    console.log(data.val());
+  });
+}
+// End display default message
